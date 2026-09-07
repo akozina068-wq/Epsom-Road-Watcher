@@ -9,7 +9,8 @@ from bs4 import BeautifulSoup
 RIGHTMOVE_URL = os.environ["RIGHTMOVE_URL"]
 BOT_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
-SEEN_FILE = "seen_ids.json"
+SEEN_FILE = os.environ.get("SEEN_FILE", "seen_ids.json")
+ADDRESS_FILTER = os.environ.get("ADDRESS_FILTER", "").strip().lower()
 
 HEADERS = {
     "User-Agent": (
@@ -65,6 +66,9 @@ def fetch_listings(url):
         price = price_el.get_text(strip=True) if price_el else "Price n/a"
         ptype = type_el.get_text(strip=True) if type_el else ""
 
+        if ADDRESS_FILTER and ADDRESS_FILTER not in address.lower():
+            continue
+
         listings.append(
             {
                 "id": prop_id,
@@ -97,8 +101,6 @@ def main():
     first_run = not os.path.exists(SEEN_FILE) or os.path.getsize(SEEN_FILE) == 0
 
     if first_run:
-        # Bootstrap: record everything currently live, but don't spam
-        # Telegram with the entire backlog.
         with open(SEEN_FILE, "w") as f:
             json.dump([], f)
 
